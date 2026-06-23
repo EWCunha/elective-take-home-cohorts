@@ -1,46 +1,54 @@
-# Getting Started with Create React App
+# Cohorts manager
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project is the result of Elective Take-home assessment.
 
-## Available Scripts
+## Base structure
 
-In the project directory, you can run:
+The waiting list was implemented using a queue backed by a singly linked list, where each node represents a cohort with a fixed capacity. Creators are added FIFO, newest cohorts on the left, oldest on the right. You can find the implementation in `src/objects/queue.ts`.
 
-### `npm start`
+The web component is a single page split into two panels. The left panel lets you create waiting lists and, once a row is selected, add or remove creators and delete the list. The right panel shows a table of all active waiting lists with their cohort values, capacity, and total creators waiting.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Running the app
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+Clone this repository:
 
-### `npm test`
+```bash
+git clone https://github.com/EWCunha/elective-take-home-cohorts.git
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Install dependencies:
 
-### `npm run build`
+```bash
+npm install
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Run the app:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+npm start
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Open the URL shown on the terminal with a browser (probably `http://localhost:3000`).
 
-### `npm run eject`
+## TypeScript judgment
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+TypeScript's `number` type doesn't distinguish integers from floats, so runtime guards (`Number.isInteger`, `capacity > 0`) were added at both the class boundary and the UI layer. React state holds plain serializable objects rather than class instances, keeping diffing predictable and state easy to reason about.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Edge cases
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+- **Add / take 0 or negative**: silently ignored in both the UI and class methods
+- **Take more than total**: rejected; a warning message is shown (snapshot at click time, not live)
+- **Non-integer inputs**: `Math.floor` at the UI boundary, `Number.isInteger` in the class
+- **Capacity ≤ 0**: throws immediately in the constructor
+- **Empty list after taking all creators**: automatically deleted from state
+- **Partial first cohort**: `addCreators` fills existing free space before opening a new cohort
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## Design decisions
 
-## Learn More
+`totalWaiting` is cached in React state to avoid an O(n) traversal on every render. Queue instances are only alive during operations (`fromArray` -> operate -> `toArray`); state stays as plain arrays. A ring buffer would improve cache locality at large scale, but the linked list is sufficient here.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## AI collaboration
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+I used Cursor IDE as a coding assistant for the web layer. I drove it with specific, scoped prompts (layout, styling, state management, wiring the queue class into React) and reviewed every output before accepting it.
+
+The queue data structure (`src/objects/queue.ts`) was written entirely by me. I wanted to own the core logic directly.
