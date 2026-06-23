@@ -1,6 +1,6 @@
 # Cohorts manager
 
-This project is the result of Elective Take-home assessment.
+This project is the result of Elective Take-home assessment ([link](https://elective.notion.site/Elective-Take-home-3682686181b88065bec7d18121f6123a)).
 
 ## Base structure
 
