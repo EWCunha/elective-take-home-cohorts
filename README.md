@@ -4,7 +4,7 @@ This project is the result of Elective Take-home assessment ([link](https://elec
 
 ## Base structure
 
-The waiting list was implemented using a queue backed by a singly linked list, where each node represents a cohort with a fixed capacity. Creators are added FIFO, newest cohorts on the left, oldest on the right. You can find the implementation in `src/objects/queue.ts`.
+The waiting list was implemented using a queue backed by a singly linked list, where each node represents a cohort with a fixed capacity. Creators are served FIFO: the oldest cohort is taken first, shown on the right; the newest is on the left. You can find the implementation in `src/objects/queue.ts`.
 
 The web component is a single page split into two panels. The left panel lets you create waiting lists and, once a row is selected, add or remove creators and delete the list. The right panel shows a table of all active waiting lists with their cohort values, capacity, and total creators waiting.
 
@@ -32,7 +32,7 @@ Open the URL shown on the terminal with a browser (probably `http://localhost:30
 
 ## TypeScript judgment
 
-TypeScript's `number` type doesn't distinguish integers from floats, so runtime guards (`Number.isInteger`, `capacity > 0`) were added at both the class boundary and the UI layer. React state holds plain serializable objects rather than class instances, keeping diffing predictable and state easy to reason about.
+TypeScript's `number` type doesn't distinguish integers from floats, so runtime guards (`Number.isInteger`, `capacity > 0`) were added at both the class boundary and the UI layer. Queue instances live in React state alongside a `stateHash` string. React tracks the primitive to know when to re-render, while the class handles the domain logic.
 
 ## Edge cases
 
@@ -45,7 +45,7 @@ TypeScript's `number` type doesn't distinguish integers from floats, so runtime 
 
 ## Design decisions
 
-`totalWaiting` is cached in React state to avoid an $O(n)$ traversal on every render. Queue instances live in React state alongside a `stateHash` string. After each mutation, only the hash is updated. React sees the new primitive and re-renders, while the queue instance is mutated in place. `WaitingListRow` uses the hash in its custom memo comparator so only the affected row re-renders.
+Queue instances live in React state alongside a `stateHash` string. After each mutation, only the hash is updated. React sees the new primitive and re-renders, while the queue instance is mutated in place. `WaitingListRow` uses the hash in its custom `memo` comparator so only the affected row re-renders.
 
 ## AI collaboration
 
