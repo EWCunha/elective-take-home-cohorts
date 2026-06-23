@@ -5,9 +5,8 @@ import { Queue } from './objects/queue';
 // helpers
 interface WaitingList {
   id: number;
-  capacity: number;
-  nodes: number[];
-  totalWaiting: number;
+  queue: Queue;
+  stateHash: string;
 }
 
 let nextId = 1;
@@ -24,9 +23,9 @@ const WaitingListRow = memo(({ wl, isSelected, onClick }: {
   <tr className={isSelected ? 'row-selected' : ''} onClick={onClick}>
     <td className="cell-id">{wl.id}</td>
     <td className="cell-values">
-      {wl.nodes.length > 0 ? (
+      {wl.queue.size > 0 ? (
         <span className="node-list">
-          {[...wl.nodes].reverse().map((v, i) => (
+          {[...wl.queue.toArray()].reverse().map((v, i) => (
             <span key={i} className="node-chip">{v}</span>
           ))}
         </span>
@@ -34,10 +33,13 @@ const WaitingListRow = memo(({ wl, isSelected, onClick }: {
         <span className="empty-values">—</span>
       )}
     </td>
-    <td className="cell-capacity">{wl.capacity}</td>
-    <td className="cell-total">{wl.totalWaiting}</td>
+    <td className="cell-capacity">{wl.queue.capacity}</td>
+    <td className="cell-total">{wl.queue.waiting}</td>
   </tr>
-));
+), (prev, next) =>
+  prev.wl.stateHash === next.wl.stateHash &&
+  prev.isSelected === next.isSelected
+);
 
 function App() {
   // state
@@ -54,12 +56,14 @@ function App() {
     [waitingLists, selectedId]
   );
 
-  const updateFromQueue = useCallback((id: number, q: Queue) => {
+  // track state changes
+  const updateHash = useCallback((id: number) => {
     setWaitingLists(prev =>
-      prev.map(wl => wl.id === id ? { ...wl, nodes: q.toArray(), totalWaiting: q.waiting } : wl)
+      prev.map(wl => wl.id === id ? { ...wl, stateHash: wl.queue.hash() } : wl)
     );
   }, []);
 
+  // handle keyboard events
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, action: () => void) => {
     if (e.key === 'Enter') action();
   }, []);
@@ -69,7 +73,8 @@ function App() {
     const cap = Math.floor(capacity);
     if (!cap || cap <= 0) return;
     const id = nextId++;
-    setWaitingLists(prev => [...prev, { id, capacity: cap, nodes: [], totalWaiting: 0 }]);
+    const q = new Queue(cap);
+    setWaitingLists(prev => [...prev, { id, queue: q, stateHash: q.hash() }]);
   }, [capacity]);
 
   // select waiting list
@@ -85,15 +90,14 @@ function App() {
   // list operations
   const handleEnqueue = useCallback(() => {
     if (!selected || addAmount <= 0 || !Number.isInteger(addAmount)) return;
-    const q = Queue.fromArray(selected.nodes, selected.capacity);
-    q.addCreators(addAmount);
-    updateFromQueue(selected.id, q);
+    selected.queue.addCreators(addAmount);
+    updateHash(selected.id);
     setOverflowWarning(null);
-  }, [selected, addAmount, updateFromQueue]);
+  }, [selected, addAmount, updateHash]);
 
   const handleDequeue = useCallback(() => {
     if (!selected || takeAmount <= 0 || !Number.isInteger(takeAmount)) return;
-    const q = Queue.fromArray(selected.nodes, selected.capacity);
+    const q = selected.queue;
     if (takeAmount > q.waiting) {
       setOverflowWarning(`Cannot take ${takeAmount} — only ${q.waiting} waiting.`);
       return;
@@ -104,9 +108,9 @@ function App() {
       setWaitingLists(prev => prev.filter(wl => wl.id !== selected.id));
       setSelectedId(null);
     } else {
-      updateFromQueue(selected.id, q);
+      updateHash(selected.id);
     }
-  }, [selected, takeAmount, updateFromQueue]);
+  }, [selected, takeAmount, updateHash]);
 
   const handleDelete = useCallback(() => {
     if (!selected) return;

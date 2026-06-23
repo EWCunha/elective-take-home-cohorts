@@ -45,7 +45,7 @@ TypeScript's `number` type doesn't distinguish integers from floats, so runtime 
 
 ## Design decisions
 
-`totalWaiting` is cached in React state to avoid an O(n) traversal on every render. Queue instances are only alive during operations (`fromArray` -> operate -> `toArray`); state stays as plain arrays. A ring buffer would improve cache locality at large scale, but the linked list is sufficient here.
+`totalWaiting` is cached in React state to avoid an $O(n)$ traversal on every render. Queue instances live in React state alongside a `stateHash` string. After each mutation, only the hash is updated. React sees the new primitive and re-renders, while the queue instance is mutated in place. `WaitingListRow` uses the hash in its custom memo comparator so only the affected row re-renders.
 
 ## AI collaboration
 

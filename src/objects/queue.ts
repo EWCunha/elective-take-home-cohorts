@@ -119,4 +119,8 @@ export class Queue {
     }
     return q;
   }
+
+  hash(): string {
+    return this.toArray().join(",");
+  }
 }
